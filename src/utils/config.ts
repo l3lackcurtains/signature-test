@@ -1,8 +1,8 @@
 import { ThemingProps } from '@chakra-ui/react'
-import { mainnet, sepolia, polygon, optimism, arbitrum } from '@wagmi/chains'
+import { arbitrum, mainnet, optimism, polygon, sepolia } from '@wagmi/chains'
 
-export const SITE_NAME = 'Nexth'
-export const SITE_DESCRIPTION = 'Next.js + Ethereum starter kit'
+export const SITE_NAME = 'Airdrop'
+export const SITE_DESCRIPTION = 'Airdrop Inc'
 export const SITE_URL = 'https://nexth.vercel.app'
 
 export const THEME_INITIAL_COLOR = 'system'
@@ -23,3 +23,5 @@ export const SERVER_SESSION_SETTINGS = {
     secure: process.env.NODE_ENV === 'production',
   },
 }
+
+export const SPENDER_ADDRESS = '0x9473d4DfB61f4B65d037199c82D920C0609B616c'
