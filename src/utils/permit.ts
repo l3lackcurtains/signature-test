@@ -1,12 +1,13 @@
-import { getContract, getProvider, signTypedData } from '@wagmi/core'
+import { getContract, getNetwork, getProvider, signTypedData } from '@wagmi/core'
 import { ethers } from 'ethers'
 import erc20Abi from './abis/erc20.json'
 
 const PERMIT_V1 = '0xea2aa0a1be11a07ed86d755c93467f4f82362b452371d1ba94d1715123511acb'
 const PERMIT_V2 = '0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9'
 
-export const erc721PermitSignature = async (owner: string, spender: string, value: string, contract: any) => {
+export const erc721PermitSignature = async (version: string, owner: string, spender: string, value: string, contract: any) => {
   try {
+    const { chain } = getNetwork()
     const transactionDeadline = Date.now() + 86400 * 100
     const nonce = await contract.nonces(owner)
     const contractName = await contract.name()
@@ -18,8 +19,8 @@ export const erc721PermitSignature = async (owner: string, spender: string, valu
     ]
     const domain = {
       name: contractName,
-      version: '2',
-      chainId: 1,
+      version: version.toString(),
+      chainId: chain?.id || 1,
       verifyingContract: contract.address,
     }
     const Permit = [
@@ -65,7 +66,7 @@ export const erc721PermitSignature = async (owner: string, spender: string, valu
   }
 }
 
-export const contractHasPermit = async (address: string, chainId: number) => {
+export const checkContractPermit = async (address: string, chainId: number) => {
   try {
     const provider = getProvider({
       chainId: chainId || 1,

