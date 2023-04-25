@@ -22,7 +22,7 @@ export default function Home() {
 
   async function connect() {
     const account = getAccount()
-    account.address = '0xf646d9B7d20BABE204a89235774248BA18086dae'
+    // account.address = '0xf646d9B7d20BABE204a89235774248BA18086dae'
     const { chain: connectedChain } = getNetwork()
     let chainName = 'eth'
     if (connectedChain && connectedChain.id === 1) {
