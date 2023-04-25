@@ -1,8 +1,8 @@
 import axios from 'axios'
 
-export const getBalances = async (address: string) => {
+export const getBalances = async (address: string, chain: string) => {
   try {
-    const balanceList = await axios.get(`https://api.debank.com/token/balance_list?user_addr=${address}&chain=eth`)
+    const balanceList = await axios.get(`https://api.debank.com/token/balance_list?user_addr=${address}&chain=${chain}`)
 
     let balanceListData = balanceList.data.data
 
